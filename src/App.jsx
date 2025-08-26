@@ -1,54 +1,39 @@
-"use client";
-import { useState, useEffect } from "react";
-import "./index.css"; // <-- make sure it's imported
+import { useEffect, useState } from "react";
 
-export default function Home() {
-  const [coinCount, setCoinCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+function App() {
+  const [total, setTotal] = useState(0);
 
-  const fetchCoins = async () => {
-    try {
-      const res = await fetch("/api/data", { cache: "no-store" });
-      const data = await res.json();
-      setCoinCount(data.coinCount);
-    } catch (err) {
-      console.error("Fetch error:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const resetCoins = async () => {
-    setIsLoading(true);
-    try {
-      await fetch("/api/data", { method: "DELETE" });
-      setCoinCount(0);
-    } catch (err) {
-      console.error("Reset error:", err);
-    } finally {
-      setIsLoading(false);
-    }
+  const fetchTotal = async () => {
+    const res = await fetch("/api/coins"); // Calls Vercel API
+    const data = await res.json();
+    setTotal(data.total);
   };
 
   useEffect(() => {
-    fetchCoins();
-    const interval = setInterval(fetchCoins, 2000);
+    fetchTotal();
+    const interval = setInterval(fetchTotal, 2000); // refresh every 2s
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="container">
-      <h1>💰 Coin Counter</h1>
-
-      {isLoading ? (
-        <p className="counter-value">...</p>
-      ) : (
-        <p className="counter-value">{coinCount}</p>
-      )}
-
-      <button onClick={resetCoins} disabled={isLoading}>
-        {isLoading ? "Processing..." : "Reset"}
+    <div className="p-6">
+      <h1 className="text-3xl font-bold">💰 Coin Counter</h1>
+      <p className="text-2xl mt-4">{total}</p>
+      <button
+        className="mt-4 px-4 py-2 bg-red-500 text-white rounded"
+        onClick={async () => {
+          await fetch("/api/coins", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ value: 1 })
+          });
+          fetchTotal();
+        }}
+      >
+        Add Coin (Test)
       </button>
     </div>
   );
 }
+
+export default App;
