@@ -1,54 +1,68 @@
-"use client";
+// App.jsx
 import { useState, useEffect } from "react";
-import "./index.css"; // <-- make sure it's imported
 
-export default function Home() {
-  const [coinCount, setCoinCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+function App() {
+  const [count, setCount] = useState(0);
 
-  const fetchCoins = async () => {
-    try {
-      const res = await fetch("/api/data", { cache: "no-store" });
-      const data = await res.json();
-      setCoinCount(data.coinCount);
-    } catch (err) {
-      console.error("Fetch error:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const resetCoins = async () => {
-    setIsLoading(true);
-    try {
-      await fetch("/api/data", { method: "DELETE" });
-      setCoinCount(0);
-    } catch (err) {
-      console.error("Reset error:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // Fetch latest coin total from backend
   useEffect(() => {
-    fetchCoins();
-    const interval = setInterval(fetchCoins, 2000);
+    fetch("https://coin-dashboard-proj.vercel.app/api/data")
+      .then((res) => res.json())
+      .then((data) => {
+        setCount(data.total);
+      })
+      .catch((err) => console.error("Error fetching data:", err));
+
+    // Auto-refresh every 5 seconds
+    const interval = setInterval(() => {
+      fetch("https://coin-dashboard-proj.vercel.app/api/data")
+        .then((res) => res.json())
+        .then((data) => setCount(data.total));
+    }, 5000);
+
     return () => clearInterval(interval);
   }, []);
 
+  // Reset function
+  const handleReset = async () => {
+    await fetch("https://coin-dashboard-proj.vercel.app/api/data", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ coinCount: -count }), // subtract current total
+    });
+
+    setCount(0);
+  };
+
   return (
-    <div className="container">
+    <div
+      style={{
+        height: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        flexDirection: "column",
+        backgroundColor: "#1a1a1a",
+        color: "white",
+      }}
+    >
       <h1>💰 Coin Counter</h1>
-
-      {isLoading ? (
-        <p className="counter-value">...</p>
-      ) : (
-        <p className="counter-value">{coinCount}</p>
-      )}
-
-      <button onClick={resetCoins} disabled={isLoading}>
-        {isLoading ? "Processing..." : "Reset"}
+      <h2 style={{ fontSize: "3rem", margin: "20px" }}>{count}</h2>
+      <button
+        style={{
+          background: "black",
+          color: "white",
+          padding: "10px 20px",
+          borderRadius: "10px",
+          cursor: "pointer",
+          border: "none",
+        }}
+        onClick={handleReset}
+      >
+        Reset
       </button>
     </div>
   );
 }
+
+export default App;
